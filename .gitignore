@@ -4,3 +4,9 @@ __pycache__/
 .DS_Store
 reports/
 data/golden_set.jsonl
+# Added by code-review-graph
+.code-review-graph/
+
+.mcp.json
+CLAUDE.md
+.claude
