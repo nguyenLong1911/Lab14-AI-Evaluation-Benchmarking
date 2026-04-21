@@ -1,0 +1,33 @@
+# QUY TRÌNH VẬN HÀNH TIÊU CHUẨN (SOP) - ĐÁNH GIÁ VÀ GIÁM SÁT AI AGENT
+
+## 1. Giới thiệu tổng quan
+Hệ thống AI Lab 14 là một nền tảng đánh giá (Evaluation Factory) được thiết kế để đo lường độ chính xác, hiệu năng và chi phí của các AI Agent dựa trên kiến trúc RAG (Retrieval-Augmented Generation). Mục tiêu tối thượng là đảm bảo mọi Agent trước khi phát hành đều vượt qua các bài kiểm tra nghiêm ngặt về chất lượng.
+
+## 2. Quy trình Truy xuất (Retrieval Stage)
+Retrieval là bước quan trọng nhất trong RAG. SOP yêu cầu mọi hệ thống phải đo lường 2 chỉ số chính:
+- **Hit Rate**: Tỷ lệ phần trăm các trường hợp mà tài liệu đúng (Ground Truth) nằm trong Top-K kết quả trả về.
+- **MRR (Mean Reciprocal Rank)**: Chỉ số đo lường vị trí của tài liệu đúng. Nếu tài liệu đúng ở vị trí số 1, điểm là 1.0; nếu ở vị trí số 2, điểm là 0.5.
+
+## 3. Quy trình Đánh giá (Generation Stage)
+Sau khi có context, Agent sẽ sinh câu trả lời. Việc đánh giá câu trả lời được thực hiện bởi hệ thống "Multi-Judge Consensus":
+- **Consensus Logic**: Sử dụng ít nhất 2 model LLM độc lập (ví dụ GPT-4 và Claude) để chấm điểm trên thang từ 1-5.
+- **Hệ số Agreement**: Tỷ lệ đồng thuận giữa các Judge. Nếu độ lệch điểm > 1, hệ thống sẽ tự động gọi một "Judge Master" để phân giải.
+
+## 4. Các loại lỗi thường gặp (Failure Categories)
+- **Hallucination (Ảo tưởng)**: Agent đưa ra thông tin không có trong tài liệu.
+- **Insufficient Context (Thiếu ngữ cảnh)**: Retrieval tìm sai tài liệu dẫn đến Gen không thể trả lời đúng.
+- **Formatting Error**: Agent không tuân thủ định dạng JSON hoặc yêu cầu đặc biệt.
+
+## 5. Quy trình Kiểm thử Hồi quy (Regression Testing)
+Trước khi nâng cấp Agent từ V1 lên V2, bắt buộc phải chạy tính năng "Delta Analysis":
+- Chỉ cho phép Release nếu điểm trung bình V2 cao hơn V1 ít nhất 5%.
+- Chi phí (Cost) không được tăng quá 20% so với phiên bản cũ.
+
+## 6. Bảo mật và Guardrails
+- **PII Scrubbing**: Mọi dữ liệu cá nhân phải được làm mờ trước khi gửi tới Judge.
+- **Prompt Injection Defense**: Hệ thống eval phải bao gồm các test cases thử thách khả năng chống lại việc bị người dùng điều hướng sai mục đích.
+
+## 7. Định mức Hiệu năng (SLA)
+- Thời gian phản hồi trung bình (Latency): < 2.0s mỗi request.
+- Tỷ lệ lỗi hệ thống (Success Rate): > 99.5%.
+- Độ đồng thuận của Judge (Agreement Rate): > 85%.
