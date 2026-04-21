@@ -2,7 +2,7 @@
 
 ## 1. Thông tin cá nhân và vai trò
 - Họ và tên: Hoàng Anh Quyền
-- Mã sinh viên: (placeholder)
+- Mã sinh viên: 2A202600062
 - Vai trò được phân công: Người 7 - Analyst (Failure Analysis Report)
 - File phụ trách chính: `analysis/failure_analysis.md`
 - Mục tiêu: Phân tích kết quả benchmark thực tế từ `reports/benchmark_results.json`, phân cụm lỗi, viết 5 Whys cho 3 case tệ nhất, và đề xuất Action Plan cụ thể.
