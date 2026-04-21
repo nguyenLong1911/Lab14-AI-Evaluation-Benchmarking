@@ -1,0 +1,35 @@
+{
+  "metadata": {
+    "version": "Agent_V2_Optimized",
+    "total": 82,
+    "timestamp": "2026-04-21 22:35:35",
+    "pass_count": 31,
+    "fail_count": 51,
+    "pass_rate": 0.378
+  },
+  "metrics": {
+    "avg_score": 2.5561,
+    "hit_rate": 0.7561,
+    "avg_mrr": 0.7118,
+    "agreement_rate": 0.8445,
+    "cohen_kappa": {
+      "accuracy": 0.8400438236099699,
+      "tone": 0.7299154334038054
+    },
+    "avg_latency_sec": 21.5612,
+    "total_cost_usd": 0.0
+  },
+  "regression": {
+    "decision": "ROLLBACK",
+    "approved": false,
+    "delta_score": -0.8652,
+    "delta_hit_rate": -0.0488,
+    "cost_increase_pct": 0.0,
+    "checks": {
+      "score_improved": false,
+      "hit_rate_ok": false,
+      "cost_ok": true
+    },
+    "reason": "delta_score=-0.8652 <= 0 (V2 không cải thiện); hit_rate=75.61% < 80%"
+  }
+}

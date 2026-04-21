@@ -117,8 +117,8 @@ def _evaluate_release_gate(v1_summary: dict, v2_summary: dict) -> dict:
     }
 
 
-async def run_benchmark(agent_version: str) -> tuple[list | None, dict | None]:
-    print(f"\n🚀 Khởi động Benchmark cho {agent_version}...")
+async def run_benchmark(agent_version: str, top_k: int = 3) -> tuple[list | None, dict | None]:
+    print(f"\n🚀 Khởi động Benchmark cho {agent_version} (top_k={top_k})...")
 
     if not os.path.exists("data/golden_set.jsonl"):
         print("❌ Thiếu data/golden_set.jsonl. Hãy chạy 'python data/synthetic_gen.py' trước.")
@@ -131,7 +131,7 @@ async def run_benchmark(agent_version: str) -> tuple[list | None, dict | None]:
         print("❌ File data/golden_set.jsonl rỗng. Hãy tạo ít nhất 1 test case.")
         return None, None
 
-    agent = MainAgent()
+    agent = MainAgent(version=agent_version, top_k=top_k)
     evaluator = ExpertEvaluator()
     judge = LLMJudge()
 
@@ -144,8 +144,8 @@ async def run_benchmark(agent_version: str) -> tuple[list | None, dict | None]:
 
 
 async def main():
-    v1_results, v1_summary = await run_benchmark("Agent_V1_Base")
-    v2_results, v2_summary = await run_benchmark("Agent_V2_Optimized")
+    v1_results, v1_summary = await run_benchmark("Agent_V1_Base", top_k=3)
+    v2_results, v2_summary = await run_benchmark("Agent_V2_Optimized", top_k=5)
 
     if not v1_summary or not v2_summary:
         print("❌ Không thể chạy Benchmark. Kiểm tra lại data/golden_set.jsonl.")

@@ -16,7 +16,7 @@ load_dotenv()
 
 # Cấu hình Client theo yêu cầu của người dùng (Students updated this)
 client = AsyncOpenAI(
-    api_key=os.getenv("SHOPAI_APIKEY"), 
+    api_key=os.getenv("SHOPAIKEY_API_KEY"),
     base_url="https://api.shopaikey.com/v1",
     default_headers={
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
@@ -73,40 +73,41 @@ async def generate_qa_batch(context: str, category: str, num_pairs: int = 5) -> 
         
         data = json.loads(json_match.group(0))
         
-        # Thêm context và ground_truth_id
         for item in data:
             item["context"] = context
-            item["ground_truth_context_ids"] = ["kb_section_" + str(hash(context) % 1000)]
-            
         return data
     except Exception as e:
         print(f"Error generating {category} batch: {e}")
         return []
 
 async def main():
-    kb_path = "data/knowledge_base.txt"
-    if not os.path.exists(kb_path):
-        print("Knowledge base not found!")
+    chunks_path = "data/chunks.jsonl"
+    if not os.path.exists(chunks_path):
+        print("chunks.jsonl not found! Hãy chạy data/chunking.py trước.")
         return
 
-    with open(kb_path, "r", encoding="utf-8") as f:
-        content = f.read()
+    with open(chunks_path, "r", encoding="utf-8") as f:
+        chunks = [json.loads(line) for line in f if line.strip()]
 
-    sections = [s.strip() for s in content.split("##") if s.strip()]
-    
+    print(f"Loaded {len(chunks)} chunks từ {chunks_path}")
+
     all_qa = []
-    print(f"Bắt đầu sinh dữ liệu nâng cao từ {len(sections)} phân đoạn tài liệu...")
-    
+    print(f"Bắt đầu sinh dữ liệu nâng cao từ {len(chunks)} chunks...")
+
     # Tạo các task cho từng loại câu hỏi để đảm bảo sự đa dạng và số lượng (80+)
     tasks = []
-    for section in sections:
-        tasks.append(generate_qa_batch(section, "standard", num_pairs=5))
-        tasks.append(generate_qa_batch(section, "reasoning", num_pairs=2))
-        tasks.append(generate_qa_batch(section, "adversarial", num_pairs=2))
-        tasks.append(generate_qa_batch(section, "edge-case", num_pairs=2))
+    chunk_map = []  # theo dõi chunk nào ứng với task nào
+    for chunk in chunks:
+        context = chunk["content"]
+        chunk_id = chunk["chunk_id"]
+        for category, num in [("standard", 5), ("reasoning", 2), ("adversarial", 2), ("edge-case", 2)]:
+            tasks.append(generate_qa_batch(context, category, num_pairs=num))
+            chunk_map.append(chunk_id)
     
     results = await tqdm.gather(*tasks)
-    for batch in results:
+    for chunk_id, batch in zip(chunk_map, results):
+        for item in batch:
+            item["ground_truth_context_ids"] = [chunk_id]
         all_qa.extend(batch)
         
     # Lưu kết quả

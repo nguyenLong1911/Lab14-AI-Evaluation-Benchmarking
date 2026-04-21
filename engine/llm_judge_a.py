@@ -1,9 +1,49 @@
+import asyncio
 import json
+import logging
 import os
+import re
 from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
+
+logger = logging.getLogger(__name__)
+LLM_TIMEOUT = 30.0
+
+
+def _parse_json_response(content: str) -> Any:
+    content = content.strip()
+    # Strip markdown code fences if present
+    fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", content)
+    if fence_match:
+        return json.loads(fence_match.group(1).strip())
+    # Extract the first complete JSON object (handles trailing text after the closing brace)
+    start = content.find("{")
+    if start == -1:
+        return json.loads(content)
+    depth = 0
+    in_string = False
+    escape = False
+    for i, ch in enumerate(content[start:], start):
+        if escape:
+            escape = False
+            continue
+        if ch == "\\" and in_string:
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return json.loads(content[start : i + 1])
+    return json.loads(content)
 
 
 class LLMJudge:
@@ -72,18 +112,29 @@ Return JSON with this exact shape:
 }}
 """.strip()
 
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0,
-            response_format={"type": "json_object"},
-        )
+        try:
+            response = await asyncio.wait_for(
+                self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=0,
+                    response_format={"type": "json_object"},
+                ),
+                timeout=LLM_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Judge A LLM timeout (%.1fs) for question: %.80s", LLM_TIMEOUT, question)
+            raise
 
-        content = (response.choices[0].message.content or "{}").strip()
-        return json.loads(content)
+        content = response.choices[0].message.content or "{}"
+        try:
+            return _parse_json_response(content)
+        except json.JSONDecodeError as e:
+            logger.error("JSONDecodeError in _judge_single_answer: %s | raw (%d chars): %.200s", e, len(content), content)
+            raise
 
     async def _judge_pairwise(
         self, question: str, response_a: str, response_b: str, ground_truth: str
@@ -119,8 +170,8 @@ Return JSON only with this shape:
             response_format={"type": "json_object"},
         )
 
-        content = (response.choices[0].message.content or "{}").strip()
-        return json.loads(content)
+        content = response.choices[0].message.content or "{}"
+        return _parse_json_response(content)
 
     async def evaluate_multi_judge(
         self, question: str, answer: str, ground_truth: str

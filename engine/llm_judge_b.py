@@ -1,10 +1,15 @@
+import asyncio
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 from dotenv import find_dotenv, load_dotenv
 from openai import AsyncOpenAI
+
+logger = logging.getLogger(__name__)
+LLM_TIMEOUT = 30.0
 
 
 def _locate_dotenv() -> str:
@@ -117,15 +122,22 @@ Return JSON with this exact shape:
 }}
 """.strip()
 
-        response = await self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0,
-            response_format={"type": "json_object"},
-        )
+        try:
+            response = await asyncio.wait_for(
+                self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt},
+                    ],
+                    temperature=0,
+                    response_format={"type": "json_object"},
+                ),
+                timeout=LLM_TIMEOUT,
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Judge B LLM timeout (%.1fs) for question: %.80s", LLM_TIMEOUT, question)
+            raise
 
         content = (response.choices[0].message.content or "{}").strip()
         return json.loads(content)
