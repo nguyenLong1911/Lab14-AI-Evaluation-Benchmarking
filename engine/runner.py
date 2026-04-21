@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import time
 from typing import List, Dict
 from dataclasses import dataclass, field
@@ -84,6 +85,7 @@ class BenchmarkRunner:
         self.cost_tracker = CostTracker()
 
     async def run_single_test(self, test_case: Dict) -> Dict:
+        question = test_case["question"]
         start_time = time.perf_counter()
 
         response = await self.agent.query(test_case["question"])

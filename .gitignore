@@ -2,8 +2,8 @@
 __pycache__/
 *.pyc
 .DS_Store
-reports/
-data/golden_set.jsonl
+
+
 # Added by code-review-graph
 .code-review-graph/
 
