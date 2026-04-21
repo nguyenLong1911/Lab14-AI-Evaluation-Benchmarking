@@ -1,9 +1,27 @@
 import json
 import os
+import re
 from typing import Any, Dict, Optional
 
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
+
+_MD_JSON = re.compile(r"```(?:json)?\s*([\s\S]*?)```", re.IGNORECASE)
+
+
+def _parse_json(raw: str | None, fallback: dict) -> dict:
+    """Parse JSON từ API response, xử lý cả trường hợp rỗng và markdown wrapper."""
+    content = (raw or "").strip()
+    # Bóc JSON ra khỏi markdown code block nếu model trả về ```json ... ```
+    md = _MD_JSON.search(content)
+    if md:
+        content = md.group(1).strip()
+    if not content:
+        return fallback
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        return fallback
 
 
 class LLMJudge:
@@ -82,8 +100,7 @@ Return JSON with this exact shape:
             response_format={"type": "json_object"},
         )
 
-        content = (response.choices[0].message.content or "{}").strip()
-        return json.loads(content)
+        return _parse_json(response.choices[0].message.content, fallback={})
 
     async def _judge_pairwise(
         self, question: str, response_a: str, response_b: str, ground_truth: str
@@ -119,8 +136,7 @@ Return JSON only with this shape:
             response_format={"type": "json_object"},
         )
 
-        content = (response.choices[0].message.content or "{}").strip()
-        return json.loads(content)
+        return _parse_json(response.choices[0].message.content, fallback={"preferred": "tie", "reasoning": ""})
 
     async def evaluate_multi_judge(
         self, question: str, answer: str, ground_truth: str
