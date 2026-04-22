@@ -1,8 +1,8 @@
 # Reflection Cá Nhân - Lab 14 AI Evaluation Benchmarking
 
 ## 1. Thông tin cá nhân và vai trò
-- Họ và tên: Huy Hoàng
-- Mã sinh viên: (placeholder)
+- Họ và tên: Hà Huy Hoàng
+- Mã sinh viên: 2A202600054
 - Vai trò được phân công: Người 5 - Backend Engineer (Async Runner + Cost Tracking)
 - File phụ trách chính: `engine/runner.py`
 - Mục tiêu: Tối ưu `run_all()` với async concurrency thực sự, thêm Cost Tracker tính chi phí USD theo token, thêm progress bar và đảm bảo toàn bộ 82 cases chạy trong thời gian hợp lý.
